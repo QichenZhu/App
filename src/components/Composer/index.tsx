@@ -252,6 +252,31 @@ function Composer(
 
     useHtmlPaste(textInput, handlePaste, true);
 
+    const handleWheel = (event: WheelEvent) => {
+        event.stopPropagation();
+    };
+
+    const addWheelEventListener = () => {
+        if (textInput.current) {
+            textInput.current.addEventListener('wheel', handleWheel);
+        } else {
+          setTimeout(() => {
+            addWheelEventListener();
+          }, 50);
+        }
+    };
+
+    const removeWheelEventListener = () => {
+        textInput.current?.removeEventListener('wheel', handleWheel);
+    };
+
+    useEffect(() => {
+        addWheelEventListener();
+        return () => {
+            removeWheelEventListener();
+        };
+    });
+
     useEffect(() => {
         if (typeof ref === 'function') {
             ref(textInput.current);
