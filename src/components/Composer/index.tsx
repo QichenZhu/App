@@ -297,6 +297,19 @@ function Composer(
         [onKeyPress],
     );
 
+    useEffect(() => {
+        const handleWheel = (event: WheelEvent) => {
+            if (textInput.current && event.target !== textInput.current) {
+                Object.defineProperty(event, 'target', {writable: false, value: textInput.current});
+            }
+        };
+    
+        textInput.current?.addEventListener('wheel', handleWheel);
+        return () => {
+            textInput.current?.removeEventListener('wheel', handleWheel);
+        };
+    });
+
     const renderElementForCaretPosition = (
         <View
             style={{

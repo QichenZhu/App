@@ -428,7 +428,6 @@ function ReportActionItemMessageEdit(
                             }}
                             selection={selection}
                             onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
-                            shouldContainScroll
                         />
                     </View>
                     <View style={styles.editChatItemEmojiWrapper}>
