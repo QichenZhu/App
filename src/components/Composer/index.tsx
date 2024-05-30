@@ -254,23 +254,6 @@ function Composer(
     useHtmlPaste(textInput, handlePaste, true);
 
     useEffect(() => {
-        if (!textInput.current) {
-            return;
-        }
-
-        const handleWheel = (event: WheelEvent) => {
-            if (isScrollBarVisible) {
-                event.stopPropagation();
-            }
-        };
-
-        textInput.current.addEventListener('wheel', handleWheel);
-        return () => {
-            textInput.current?.removeEventListener('wheel', handleWheel);
-        };
-    }, [isScrollBarVisible]);
-
-    useEffect(() => {
         if (typeof ref === 'function') {
             ref(textInput.current);
         }
