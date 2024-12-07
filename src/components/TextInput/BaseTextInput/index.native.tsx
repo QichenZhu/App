@@ -368,7 +368,7 @@ function BaseTextInput(
                                     inputPaddingLeft,
                                     inputProps.secureTextEntry && styles.secureInput,
 
-                                    !isMultiline && {height, lineHeight: undefined},
+                                    !autoGrow && !isMultiline && {height, lineHeight: undefined},
 
                                     // Stop scrollbar flashing when breaking lines with autoGrowHeight enabled.
                                     ...(autoGrowHeight && !isAutoGrowHeightMarkdown
