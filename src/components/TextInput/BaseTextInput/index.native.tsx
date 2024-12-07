@@ -1,6 +1,6 @@
 import {Str} from 'expensify-common';
 import type {ForwardedRef} from 'react';
-import React, {forwardRef, useCallback, useEffect, useRef, useState} from 'react';
+import React, {forwardRef, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {GestureResponderEvent, LayoutChangeEvent, NativeSyntheticEvent, StyleProp, TextInput, TextInputFocusEventData, ViewStyle} from 'react-native';
 import {ActivityIndicator, Animated, StyleSheet, View} from 'react-native';
 import Checkbox from '@components/Checkbox';
@@ -255,21 +255,33 @@ function BaseTextInput(
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const inputHelpText = errorText || hint;
     const placeholderValue = !!prefixCharacter || isFocused || !hasLabel || (hasLabel && forceActiveLabel) ? placeholder : undefined;
+
+    const OuterContainer = autoGrow ? View : React.Fragment;
+    const middleContainerStyles = [containerStyles, autoGrow && [styles.pAbsolute, styles.w100]];
     const newTextInputContainerStyles: StyleProp<ViewStyle> = StyleSheet.flatten([
         styles.textInputContainer,
         textInputContainerStyles,
-        (autoGrow || !!contentWidth) && StyleUtils.getWidthStyle(textInputWidth),
+        !autoGrow && !!contentWidth && StyleUtils.getWidthStyle(textInputWidth),
         !hideFocusedState && isFocused && styles.borderColorFocus,
         (!!hasError || !!errorText) && styles.borderColorDanger,
         autoGrowHeight && {scrollPaddingTop: typeof maxAutoGrowHeight === 'number' ? 2 * maxAutoGrowHeight : undefined},
         isAutoGrowHeightMarkdown && styles.pb2,
     ]);
+    const hiddenTextStyles = useMemo(() => {
+        if (!autoGrow && !autoGrowHeight) {
+            return;
+        }
+        const touchableInputWrapperHeight = StyleSheet.flatten([!isMultiline && styles.componentHeightLarge, touchableInputWrapperStyle])?.height;
+        return autoGrow
+            ? [typeof touchableInputWrapperHeight === 'number' && StyleUtils.getHeight(touchableInputWrapperHeight), styles.opacity0, styles.pointerEventsNone, styles.pv0, {zIndex: -1}]
+            : [styles.hiddenElementOutsideOfWindow, styles.visibilityHidden];
+    }, [StyleUtils, autoGrow, autoGrowHeight, isMultiline, styles, touchableInputWrapperStyle]);
 
     const inputPaddingLeft = !!prefixCharacter && StyleUtils.getPaddingLeft(StyleUtils.getCharacterPadding(prefixCharacter) + styles.pl1.paddingLeft);
 
     return (
-        <>
-            <View style={[containerStyles]}>
+        <OuterContainer>
+            <View style={middleContainerStyles}>
                 <PressableWithoutFeedback
                     role={CONST.ROLE.PRESENTATION}
                     onPress={onPress}
@@ -449,20 +461,17 @@ function BaseTextInput(
             )}
             {/*
                  Text input component doesn't support auto grow by default.
-                 We're using a hidden text input to achieve that.
-                 This text view is used to calculate width or height of the input value given textStyle in this component.
-                 This Text component is intentionally positioned out of the screen.
+                 We're using a hidden text view to achieve that.
+                 1. When set to auto-grow height, this text view is used to calculate width or height of the input value given textStyle in this component,
+                    and is intentionally positioned out of the screen.
+                 2. When set to auto-grow width, this text view is placed beneath the input to allow the outer container to adapt to it.
              */}
             {(!!autoGrow || autoGrowHeight) && !isAutoGrowHeightMarkdown && (
-                // Add +2 to width on Safari browsers so that text is not cut off due to the cursor or when changing the value
-                // https://github.com/Expensify/App/issues/8158
-                // https://github.com/Expensify/App/issues/26628
                 <Text
                     style={[
                         inputStyle,
                         autoGrowHeight && styles.autoGrowHeightHiddenInput(width ?? 0, typeof maxAutoGrowHeight === 'number' ? maxAutoGrowHeight : undefined),
-                        styles.hiddenElementOutsideOfWindow,
-                        styles.visibilityHidden,
+                        hiddenTextStyles,
                     ]}
                     onLayout={(e) => {
                         if (e.nativeEvent.layout.width === 0 && e.nativeEvent.layout.height === 0) {
@@ -476,7 +485,7 @@ function BaseTextInput(
                     {value ? `${value}${value.endsWith('\n') ? '\u200B' : ''}` : placeholder}
                 </Text>
             )}
-        </>
+        </OuterContainer>
     );
 }
 
