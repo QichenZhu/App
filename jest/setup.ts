@@ -8,6 +8,7 @@ import type Animated from 'react-native-reanimated';
 import 'setimmediate';
 import mockFSLibrary from './setupMockFullstoryLib';
 import setupMockImages from './setupMockImages';
+import '../__mocks__/browser/match-media';
 
 setupMockImages();
 mockFSLibrary();

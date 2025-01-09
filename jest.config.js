@@ -1,5 +1,6 @@
 const testFileExtension = '[jt]s?(x)';
-module.exports = {
+
+const sharedConfig = {
     preset: 'jest-expo',
     testMatch: [
         `<rootDir>/tests/ui/**/*.${testFileExtension}`,
@@ -28,4 +29,24 @@ module.exports = {
     moduleNameMapper: {
         '\\.(lottie)$': '<rootDir>/__mocks__/fileMock.ts',
     },
+};
+
+module.exports = {
+    projects: [
+        {
+            ...sharedConfig,
+            displayName: 'iOS',
+            testPathIgnorePatterns: ['\\.web\\.'],
+        },
+        {
+            ...sharedConfig,
+            displayName: 'Web',
+            preset: 'jest-expo/web',
+            testMatch: [`<rootDir>/tests/ui/**/*.web.${testFileExtension}`],
+            moduleNameMapper: {
+                ...sharedConfig.moduleNameMapper,
+                '^react-native$': 'react-native-web',
+            },
+        },
+    ],
 };
