@@ -80,6 +80,7 @@ import NavigationAwareCamera from './NavigationAwareCamera/WebCamera';
 import ReceiptPreviews from './ReceiptPreviews';
 import type IOURequestStepScanProps from './types';
 import type {ReceiptFile} from './types';
+import {cropReceiptToAspectRatio} from './utils';
 
 function IOURequestStepScan({
     report,
@@ -701,30 +702,33 @@ function IOURequestStepScan({
         const filename = `receipt_${Date.now()}.png`;
         const file = base64ToFile(imageBase64 ?? '', filename);
         const source = URL.createObjectURL(file);
-        const transaction =
-            isMultiScanEnabled && initialTransaction?.receipt?.source
-                ? buildOptimisticTransactionAndCreateDraft({
-                      initialTransaction,
-                      currentUserPersonalDetails,
-                      reportID,
-                  })
-                : initialTransaction;
-        const transactionID = transaction?.transactionID ?? initialTransactionID;
-        const newReceiptFiles = [...receiptFiles, {file, source, transactionID}];
+        const containerBounds = cameraRef.current.video?.parentElement?.getBoundingClientRect?.();
+        cropReceiptToAspectRatio({file, filename: file.name, source}, containerBounds?.width, containerBounds?.height, !isMobileWebKit()).then(({file, filename, source}) => {
+            const transaction =
+                isMultiScanEnabled && initialTransaction?.receipt?.source
+                    ? buildOptimisticTransactionAndCreateDraft({
+                          initialTransaction,
+                          currentUserPersonalDetails,
+                          reportID,
+                      })
+                    : initialTransaction;
+            const transactionID = transaction?.transactionID ?? initialTransactionID;
+            const newReceiptFiles = [...receiptFiles, {file, source, transactionID}];
 
-        setMoneyRequestReceipt(transactionID, source, file.name, !isEditing);
-        setReceiptFiles(newReceiptFiles);
+            setMoneyRequestReceipt(transactionID, source, filename, !isEditing);
+            setReceiptFiles(newReceiptFiles);
 
-        if (isMultiScanEnabled) {
-            return;
-        }
+            if (isMultiScanEnabled) {
+                return;
+            }
 
-        if (isEditing) {
-            updateScanAndNavigate(file, source);
-            return;
-        }
+            if (isEditing) {
+                updateScanAndNavigate(file, source);
+                return;
+            }
 
-        submitReceipts(newReceiptFiles);
+            submitReceipts(newReceiptFiles);
+        });
     }, [
         isMultiScanEnabled,
         initialTransaction,

@@ -1,6 +1,7 @@
 import {useFocusEffect} from '@react-navigation/core';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, Alert, AppState, InteractionManager, StyleSheet, View} from 'react-native';
+import type {LayoutRectangle} from 'react-native';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import type {OnyxEntry} from 'react-native-onyx';
@@ -78,6 +79,7 @@ import NavigationAwareCamera from './NavigationAwareCamera/Camera';
 import ReceiptPreviews from './ReceiptPreviews';
 import type IOURequestStepScanProps from './types';
 import type {ReceiptFile} from './types';
+import {cropReceiptToAspectRatio} from './utils';
 
 function IOURequestStepScan({
     report,
@@ -612,7 +614,7 @@ function IOURequestStepScan({
         },
         [shouldSkipConfirmation, navigateToConfirmationStep, initialTransaction, iouType, shouldStartLocationPermissionFlow],
     );
-
+    const cameraViewLayout = useRef<LayoutRectangle>(null);
     const capturePhoto = useCallback(() => {
         if (!camera.current && (cameraPermissionStatus === RESULTS.DENIED || cameraPermissionStatus === RESULTS.BLOCKED)) {
             askForPermissions();
@@ -672,32 +674,35 @@ function IOURequestStepScan({
                                   })
                                 : initialTransaction;
                         const transactionID = transaction?.transactionID ?? initialTransactionID;
+                        cropReceiptToAspectRatio({file: photo, filename: photo.path, source}, cameraViewLayout.current?.width, cameraViewLayout.current?.height, false).then(
+                            ({filename, source}) => {
+                                setMoneyRequestReceipt(transactionID, source, filename, !isEditing);
 
-                        setMoneyRequestReceipt(transactionID, source, photo.path, !isEditing);
+                                readFileAsync(
+                                    source,
+                                    filename,
+                                    (file) => {
+                                        if (isEditing) {
+                                            updateScanAndNavigate(file, source);
+                                            return;
+                                        }
 
-                        readFileAsync(
-                            source,
-                            photo.path,
-                            (file) => {
-                                if (isEditing) {
-                                    updateScanAndNavigate(file, source);
-                                    return;
-                                }
+                                        const newReceiptFiles = [...receiptFiles, {file, source, transactionID}];
+                                        setReceiptFiles(newReceiptFiles);
 
-                                const newReceiptFiles = [...receiptFiles, {file, source, transactionID}];
-                                setReceiptFiles(newReceiptFiles);
+                                        if (isMultiScanEnabled) {
+                                            setDidCapturePhoto(false);
+                                            return;
+                                        }
 
-                                if (isMultiScanEnabled) {
-                                    setDidCapturePhoto(false);
-                                    return;
-                                }
-
-                                submitReceipts(newReceiptFiles);
-                            },
-                            () => {
-                                setDidCapturePhoto(false);
-                                showCameraAlert();
-                                Log.warn('Error reading photo');
+                                        submitReceipts(newReceiptFiles);
+                                    },
+                                    () => {
+                                        setDidCapturePhoto(false);
+                                        showCameraAlert();
+                                        Log.warn('Error reading photo');
+                                    },
+                                );
                             },
                         );
                     })
@@ -803,6 +808,7 @@ function IOURequestStepScan({
                                         zoom={device.neutralZoom}
                                         photo
                                         cameraTabIndex={1}
+                                        onLayout={(e) => (cameraViewLayout.current = e.nativeEvent.layout)}
                                     />
                                     <Animated.View style={[styles.cameraFocusIndicator, cameraFocusIndicatorAnimatedStyle]} />
                                     {canUseMultiScan ? (
