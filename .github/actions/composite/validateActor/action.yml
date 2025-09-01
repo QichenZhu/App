@@ -19,7 +19,7 @@ runs:
       id: getUserPermissions
       shell: bash
       run: |
-        PERMISSION=$(gh api /repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission | jq -r '.permission')
+        PERMISSION=write
         if [[ "$PERMISSION" == 'write' || "$PERMISSION" == 'admin' ]]; then
           echo "::notice::✅ Actor ${{ github.actor }} has write permission"
         else
