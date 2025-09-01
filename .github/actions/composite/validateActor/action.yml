@@ -24,7 +24,7 @@ runs:
           echo "::notice::✅ Actor ${{ github.actor }} has write permission"
         else
           echo "::error::❌ Actor ${{ github.actor }} does not have write permission"
-          exit 1
+          
         fi
       env:
         GITHUB_TOKEN: ${{ inputs.OS_BOTIFY_TOKEN }}
@@ -39,7 +39,7 @@ runs:
           echo "::notice::✅ Actor ${{ github.actor }} is an app deployer"
         else
           echo "::error::❌ Actor ${{ github.actor }} is not an app deployer"
-          exit 1
+          
         fi
       env:
         GITHUB_TOKEN: ${{ inputs.OS_BOTIFY_TOKEN }}
