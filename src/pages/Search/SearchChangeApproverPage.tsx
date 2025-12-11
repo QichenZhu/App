@@ -170,26 +170,26 @@ function SearchChangeApproverPage() {
 
         const hasPermission = selectedReports.every((selectedReport) => {
             const policy = allPolicies?.[`${ONYXKEYS.COLLECTION.POLICY}${selectedReport.policyID}`];
+            const report = onyxReports?.get(selectedReport.reportID);
 
-            if (!policy) {
+            if (!policy || !report) {
                 return false;
             }
 
-            return isPolicyAdmin(policy);
+            return isPolicyAdmin(policy) && isAllowedToApproveExpenseReport(report, currentUserDetails.accountID, policy);
         });
 
         const shouldShowBypassApproversOption =
             hasPermission &&
             selectedReports.some((selectedReport) => {
-                const policy = allPolicies?.[`${ONYXKEYS.COLLECTION.POLICY}${selectedReport.policyID}`];
                 const report = onyxReports?.get(selectedReport.reportID);
 
-                if (!policy || !report) {
+                if (!report) {
                     return false;
                 }
 
                 const isCurrentUserManager = report.managerID === currentUserDetails.accountID;
-                return !isCurrentUserManager && isAllowedToApproveExpenseReport(report, currentUserDetails.accountID, policy);
+                return !isCurrentUserManager;
             });
 
         if (shouldShowBypassApproversOption) {
